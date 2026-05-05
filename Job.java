@@ -4,39 +4,49 @@ public class Job {
 
     static int[] parent;
 
-    static int find(int s) {
-        if (parent[s] == s)
-            return s;
-        return parent[s] = find(parent[s]); // Path compression
+    static int find(int i) {
+        while (parent[i] != i)
+            i = parent[i];
+        return i;
     }
 
     static void union(int u, int v) {
         parent[v] = u;
     }
 
-    static void jobScheduling(JobNode[] jobs, int n) {
+    static void jobScheduling(int[] id, int[] deadline, int[] profit, int n) {
 
-        Arrays.sort(jobs, (a, b) -> b.profit - a.profit);
+        // Sort jobs by profit descending (bubble sort)
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (profit[j] < profit[j + 1]) {
+                    int tmp;
+                    tmp = profit[j];   profit[j] = profit[j+1];   profit[j+1] = tmp;
+                    tmp = deadline[j]; deadline[j] = deadline[j+1]; deadline[j+1] = tmp;
+                    tmp = id[j];       id[j] = id[j+1];             id[j+1] = tmp;
+                }
+            }
+        }
 
+        // Find max deadline
         int maxDeadline = 0;
-        for (JobNode job : jobs)
-            maxDeadline = Math.max(maxDeadline, job.deadline);
+        for (int i = 0; i < n; i++)
+            if (deadline[i] > maxDeadline)
+                maxDeadline = deadline[i];
 
+        // Initialize parent array
         parent = new int[maxDeadline + 1];
-
         for (int i = 0; i <= maxDeadline; i++)
             parent[i] = i;
 
         int totalProfit = 0;
 
-        for (JobNode job : jobs) {
-
-            int availableSlot = find(job.deadline);
-
+        System.out.println("Scheduled Jobs:");
+        for (int i = 0; i < n; i++) {
+            int availableSlot = find(deadline[i]);
             if (availableSlot > 0) {
-                System.out.println("Job " + job.id + " scheduled at slot " + availableSlot);
-                totalProfit += job.profit;
-
+                System.out.println("Job " + id[i] + " scheduled at slot " + availableSlot);
+                totalProfit += profit[i];
                 union(find(availableSlot - 1), availableSlot);
             }
         }
@@ -45,26 +55,24 @@ public class Job {
     }
 
     public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
 
-        JobNode[] jobs = {
-            new JobNode(1, 2, 100),
-            new JobNode(2, 1, 19),
-            new JobNode(3, 2, 27),
-            new JobNode(4, 1, 25),
-            new JobNode(5, 3, 15)
-        };
+        System.out.print("Enter number of jobs: ");
+        int n = sc.nextInt();
 
-        jobScheduling(jobs, jobs.length);
-    }
-}
+        int[] id       = new int[n];
+        int[] deadline = new int[n];
+        int[] profit   = new int[n];
 
-// Separate data class (NOT public)
-class JobNode {
-    int id, deadline, profit;
+        System.out.println("Enter id, deadline, profit for each job:");
+        for (int i = 0; i < n; i++) {
+            System.out.print("Job " + (i + 1) + ": ");
+            id[i]       = sc.nextInt();
+            deadline[i] = sc.nextInt();
+            profit[i]   = sc.nextInt();
+        }
 
-    JobNode(int id, int deadline, int profit) {
-        this.id = id;
-        this.deadline = deadline;
-        this.profit = profit;
+        jobScheduling(id, deadline, profit, n);
+        sc.close();
     }
 }
