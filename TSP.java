@@ -1,59 +1,36 @@
-import java.util.*;
+import java.util.Scanner;
 
 public class TSP {
 
     static int N;
     static int[][] a;
     static int min = Integer.MAX_VALUE;
-    static int[] best;
+    static int[] best, path;
+    static boolean[] visited;
 
-    static void tsp() {
-        PriorityQueue<int[]> pq = new PriorityQueue<>((x, y) -> x[0] - y[0]);
-        // Each entry: [cost, level, city, path encoded as visited mask]
-        // We'll use Node arrays: [cost, level, city] + path[] + visited[]
-        // Keep Node class but simpler
-        Node root = new Node();
-        root.level = 1;
-        root.city  = 0;
-        root.cost  = 0;
-        root.path  = new int[N + 1];
-        root.visited = new boolean[N];
-        root.path[0] = 0;
-        root.visited[0] = true;
-
-        Queue<Node> queue = new PriorityQueue<>((x, y) -> x.cost - y.cost);
-        queue.add(root);
-        best = new int[N + 1];
-
-        while (!queue.isEmpty()) {
-            Node cur = queue.poll();
-
-            // All cities visited → return to start
-            if (cur.level == N) {
-                int total = cur.cost + a[cur.city][0];
-                if (total < min) {
-                    min  = total;
-                    best = cur.path.clone();
-                    best[N] = 0;
-                }
-                continue;
+    // Recursive Backtracking function
+    static void solve(int city, int level, int cost) {
+        // Base case: All cities visited, return to start
+        if (level == N) {
+            int totalCost = cost + a[city][0];
+            if (totalCost < min) {
+                min = totalCost;
+                System.arraycopy(path, 0, best, 0, N); // Save the best path
+                best[N] = 0; // Last step is always returning to 0
             }
+            return;
+        }
 
-            // Try visiting each unvisited city
-            for (int i = 0; i < N; i++) {
-                if (!cur.visited[i]) {
-                    Node child    = new Node();
-                    child.level   = cur.level + 1;
-                    child.city    = i;
-                    child.cost    = cur.cost + a[cur.city][i];
-                    child.path    = cur.path.clone();
-                    child.visited = cur.visited.clone();
-                    child.path[cur.level] = i;
-                    child.visited[i]      = true;
-
-                    if (child.cost < min)
-                        queue.add(child);
-                }
+        // Try visiting all other unvisited cities
+        for (int i = 0; i < N; i++) {
+            // Prune paths that already exceed the minimum cost found
+            if (!visited[i] && cost + a[city][i] < min) {
+                visited[i] = true;
+                path[level] = i;
+                
+                solve(i, level + 1, cost + a[city][i]); // Recurse
+                
+                visited[i] = false; // Backtrack
             }
         }
     }
@@ -64,25 +41,29 @@ public class TSP {
         System.out.print("Enter number of cities: ");
         N = sc.nextInt();
         a = new int[N][N];
+        best = new int[N + 1];
+        path = new int[N + 1];
+        visited = new boolean[N];
 
         System.out.println("Enter cost matrix (" + N + "x" + N + "):");
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < N; j++)
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
                 a[i][j] = sc.nextInt();
+            }
+        }
 
-        tsp();
+        // Initialize the start city (City 0)
+        visited[0] = true;
+        path[0] = 0;
+        
+        solve(0, 1, 0); // Start solving from city 0, level 1, cost 0
 
         System.out.println("Minimum cost = " + min);
         System.out.print("Path: ");
-        for (int i = 0; i <= N; i++)
+        for (int i = 0; i <= N; i++) {
             System.out.print(best[i] + " ");
+        }
 
         sc.close();
     }
-}
-
-class Node {
-    int level, city, cost;
-    int[] path;
-    boolean[] visited;
 }
